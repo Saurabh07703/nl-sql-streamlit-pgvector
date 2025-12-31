@@ -3,7 +3,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import pickle
 
-ENGINE_URL = "postgresql+psycopg2://postgres:Saurabh%4012345@localhost:5432/postgres"
+ENGINE_URL = DB_URL = "postgresql+psycopg2://postgres:YOUR_PASSWORD@localhost:5432/postgres"
 
 engine = create_engine(ENGINE_URL)
 
