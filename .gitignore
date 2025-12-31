@@ -1,21 +1,29 @@
 # Python
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 
 # Venv
 .venv/
 venv/
+ENV/
+env/
 
-# Streamlit cache
+# Streamlit
 .streamlit/
 
-# IDE files
+# IDE
 .idea/
 .vscode/
+*.swp
+*.swo
 
 # Data / cache artifacts
 *.pkl
 *.db
+db/vectorizer.pkl
 
 # Environment variables
 .env
+
