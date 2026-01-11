@@ -1,3 +1,14 @@
+---
+title: NLP SQL Streamlit
+emoji: 📊
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.40.1
+app_file: app/main.py
+pinned: false
+---
+
 🧩 System Architecture (Simple & Professional View)
 flowchart TD
 
