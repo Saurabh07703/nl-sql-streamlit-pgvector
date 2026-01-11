@@ -41,20 +41,29 @@ Ensure you have a cloud database (like Neon.tech) as previously configured.
 ---
 **Note**: The custom `README.md` configuration we added handles the build settings automatically.
 
-## 3. (Optional) Connect GitHub for Automatic Deployment
-To automatically update your Space whenever you push to GitHub:
+## 3. Connect GitHub for Automatic Deployment (Manual Method)
+Since the "Connect to GitHub" button is not visible, we will set up a **GitHub Action** manually.
 
-1.  **Open Space Settings**:
-    *   In your Hugging Face Space, click on the **Settings** button (top right).
-2.  **Connect Repository**:
-    *   Scroll down to the **Git** or **Assets** section (look for "Connect a repository").
-    *   Click **Connect to GitHub**.
-    *   Authorize Hugging Face if prompted.
-    *   Select your GitHub repository (`your-username/your-repo`).
-3.  **Setup Action**:
-    *   Hugging Face will prompt you to "Configure the Action".
-    *   It will open a **Pull Request** on your GitHub repository with a `.github/workflows/main.yml` file.
-    *   **Merge** that Pull Request on GitHub.
-4.  **Done!**:
-    *   Now, every time you push code to GitHub, it will automatically sync to your Hugging Face Space.
+1.  **Get a Hugging Face Access Token**:
+    *   Go to your [Hugging Face Settings -> Access Tokens](https://huggingface.co/settings/tokens).
+    *   Create a new token with **Write** permissions.
+    *   Copy the token.
+
+2.  **Add Secret to GitHub**:
+    *   Go to your GitHub Repository.
+    *   Click **Settings** -> **Secrets and variables** -> **Actions**.
+    *   Click **New repository secret**.
+    *   **Name**: `HF_TOKEN`
+    *   **Value**: Paste your Hugging Face token.
+    *   Click **Add secret**.
+
+3.  **Configure the Sync Workflow**:
+    *   Open the file `.github/workflows/sync_to_hub.yml` in your project.
+    *   **Edit the last line** to match your Hugging Face Space URL.
+    *   Replace `YOUR_HF_USERNAME/YOUR_SPACE_NAME` with your actual Space path (e.g., `saurabh/nl-sql-streamlit`).
+    *   *Example*: `git push https://oauth2:$HF_TOKEN@huggingface.co/spaces/saurabh/nl-sql-streamlit main`
+
+4.  **Push Changes**:
+    *   Commit and push your changes to GitHub.
+    *   The Action will run and sync your code to Hugging Face automatically!
 
