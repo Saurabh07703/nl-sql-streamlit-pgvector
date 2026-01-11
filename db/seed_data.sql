@@ -18,3 +18,9 @@ INSERT INTO orders (customer_name, employee_id, order_total, order_date) VALUES
 ('Ananya Gupta', 2, 5200, '2024-02-05'),
 ('David Paul', 3, 1200, '2024-02-15'),
 ('Sneha Rao', 4, 3100, '2024-03-02');
+
+INSERT INTO products (name, price) VALUES
+('Football', 1500),
+('Cricket Bat', 3000),
+('Tennis Racket', 4500),
+('Soccer Shoes', 2500);

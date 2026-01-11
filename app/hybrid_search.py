@@ -11,6 +11,7 @@ def semantic_product_search(text):
     SELECT id, name, price,
            (name_vector <#> (:v)::vector) AS distance
     FROM products
+    WHERE (name_vector <#> (:v)::vector) < -0.15
     ORDER BY distance ASC
     LIMIT 5;
     """
