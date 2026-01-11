@@ -19,6 +19,8 @@ def sync_data():
 sync_data()
 
 st.title("💬 AI Database Assistant")
+st.sidebar.markdown("**App Status:** 🟢 Online")
+st.sidebar.markdown("**Version:** v1.5.0 (Latest)")
 
 # Initialize chat history
 if "messages" not in st.session_state:
