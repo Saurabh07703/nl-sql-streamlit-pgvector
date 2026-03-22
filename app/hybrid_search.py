@@ -1,11 +1,14 @@
 import pickle
 from db import run_query
+from langsmith import traceable
 
 VEC = pickle.load(open("db/vectorizer.pkl", "rb"))
 
+@traceable(name="Text Embedding")
 def embed(text: str):
     return VEC.transform([text]).toarray()[0].tolist()
 
+@traceable(name="Semantic Product Search")
 def semantic_product_search(text):
     sql = """
     SELECT id, name, price,
@@ -17,6 +20,7 @@ def semantic_product_search(text):
     """
     return run_query(sql, {"v": embed(text)})
 
+@traceable(name="Semantic Customer Search")
 def semantic_customer_search(text):
     sql = """
     SELECT id, customer_name, order_total,

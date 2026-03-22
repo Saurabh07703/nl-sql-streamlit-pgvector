@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, text
 import pandas as pd
 from config import DB_URL
+from langsmith import traceable
 
 engine = create_engine(
     DB_URL,
@@ -10,6 +11,7 @@ engine = create_engine(
     max_overflow=20      # Allow temporary bursts
 )
 
+@traceable(name="Database Execution")
 def run_query(sql, params=None):
     with engine.connect() as conn:
         result = conn.execute(text(sql), params or {})

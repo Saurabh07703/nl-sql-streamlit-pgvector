@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Database Assistant</title>
+    <style>
+        :root {
+            --bg-color: #0e1117;
+            --chat-bg: #262730;
+            --user-msg: #2b313e;
+            --bot-msg: #1a1c24;
+            --text-color: #fafafa;
+            --accent: #ff4b4b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            padding: 1rem;
+            background-color: var(--chat-bg);
+            border-bottom: 1px solid #333;
+            text-align: center;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg);
+            border-bottom-right-radius: 0;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: var(--bot-msg);
+            border-bottom-left-radius: 0;
+            border-left: 3px solid var(--accent);
+        }
+
+        .input-area {
+            padding: 2rem;
+            background-color: var(--chat-bg);
+            display: flex;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 0.3rem;
+            border: 1px solid #444;
+            background-color: var(--bg-color);
+            color: white;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 0.8rem 2rem;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background-color: #1e1e1e;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 0.8rem;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background-color: #333;
+        }
+
+        .typing-indicator {
+            font-style: italic;
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>💬 AI Database Assistant</h2>
+    </div>
+
+    <div class="chat-container" id="chat">
+        <div class="message bot">
+            Hello! I can help you query the database. Ask me about products, customers, or orders.
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask a question (e.g., 'Show me all orders from John Doe')"
+            onkeypress="handleEnter(event)">
+        <button onclick="sendMessage()" id="sendBtn">Send</button>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // 1. Add User Message
+            addMessage(text, 'user');
+            userInput.value = '';
+            setLoading(true);
+
+            try {
+                // 2. Call API
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                if (!response.ok) throw new Error("API Error");
+
+                const data = await response.json();
+
+                // 3. Add Bot Response
+                addMessage(data.text, 'bot');
+
+                // 4. Render Table if data exists
+                if (data.data && data.data.length > 0) {
+                    addTable(data.data);
+                }
+
+            } catch (err) {
+                addMessage("Sorry, something went wrong. Please try again.", 'bot');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function addMessage(text, role) {
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+
+            // Convert newlines to breaks for formatting
+            div.innerHTML = text.replace(/\n/g, '<br>');
+
+            chat.appendChild(div);
+            scrollToBottom();
+        }
+
+        function addTable(data) {
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            div.style.maxWidth = '95%'; // Allow tables to be wider
+
+            if (data.length === 0) return;
+
+            const headers = Object.keys(data[0]);
+
+            let html = '<table><thead><tr>';
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(h => html += `<td>${row[h]}</td>`);
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            div.innerHTML = html;
+            chat.appendChild(div);
+            scrollToBottom();
+        }
+
+        function setLoading(isLoading) {
+            userInput.disabled = isLoading;
+            sendBtn.innerText = isLoading ? '...' : 'Send';
+        }
+
+        function scrollToBottom() {
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

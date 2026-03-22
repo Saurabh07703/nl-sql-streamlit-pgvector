@@ -1,5 +1,7 @@
 import re
+from langsmith import traceable
 
+@traceable(name="Parse Natural Language to SQL")
 def parse_query(q: str):
     ql = q.lower()
 
