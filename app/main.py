@@ -79,7 +79,7 @@ def load_chat_sessions():
 def save_chat_sessions(sessions):
     try:
         with open(CHAT_HISTORY_FILE, "w") as f:
-            json.dump(sessions, f)
+            json.dump(sessions, f, default=str)
     except Exception as e:
         print(f"Error saving chat sessions: {e}")
 
