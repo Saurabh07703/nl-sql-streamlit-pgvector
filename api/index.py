@@ -73,7 +73,7 @@ async def chat_endpoint(request: ChatRequest):
     # 2. SQL / Semantic Search
     try:
         # SQL Search
-        sql, params = parse_query(query)
+        sql, params, _ = parse_query(query)
         if sql:
             df = run_query(sql, params)
             if not df.empty:
