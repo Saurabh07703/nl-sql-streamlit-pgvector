@@ -143,7 +143,7 @@ for session_id, session_data in reversed(list(st.session_state.chat_sessions.ite
             st.session_state.current_session_id = session_id
             st.rerun()
     with col2:
-        if st.button("✕", key=f"del_{session_id}", use_container_width=True):
+        if st.button("🗑️", key=f"del_{session_id}", use_container_width=True):
             del st.session_state.chat_sessions[session_id]
             sync_history_to_disk()
             if st.session_state.current_session_id == session_id:
