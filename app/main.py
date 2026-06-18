@@ -83,20 +83,34 @@ def save_chat_sessions(sessions):
     except Exception as e:
         print(f"Error saving chat sessions: {e}")
 
+def sync_history_to_disk():
+    save_data = {}
+    for sid, sdata in st.session_state.chat_sessions.items():
+        save_data[sid] = {
+            "title": sdata["title"],
+            "context_entity": sdata["context_entity"],
+            "messages": [
+                {
+                    "role": m["role"],
+                    "content": m["content"],
+                    "data": m.get("data").to_dict(orient="records") if isinstance(m.get("data"), pd.DataFrame) else (m.get("data") if isinstance(m.get("data"), list) else None)
+                }
+                for m in sdata["messages"]
+            ]
+        }
+    save_chat_sessions(save_data)
+
 if "chat_sessions" not in st.session_state:
     st.session_state.chat_sessions = load_chat_sessions()
 
 if "current_session_id" not in st.session_state:
-    if st.session_state.chat_sessions:
-        st.session_state.current_session_id = list(st.session_state.chat_sessions.keys())[-1]
-    else:
-        new_id = str(uuid.uuid4())
-        st.session_state.current_session_id = new_id
-        st.session_state.chat_sessions[new_id] = {
-            "title": "New Chat",
-            "messages": [{"role": "assistant", "content": "Hello! I can help you query the database. Ask me about products, customers, or orders.", "data": None}],
-            "context_entity": None
-        }
+    new_id = str(uuid.uuid4())
+    st.session_state.current_session_id = new_id
+    st.session_state.chat_sessions[new_id] = {
+        "title": "New Chat",
+        "messages": [{"role": "assistant", "content": "Hello! I can help you query the database. Ask me about products, customers, or orders.", "data": None}],
+        "context_entity": None
+    }
 
 current_session = st.session_state.chat_sessions[st.session_state.current_session_id]
 
@@ -117,14 +131,30 @@ st.sidebar.markdown("<p style='font-size: 0.75rem; font-weight: 700; color: #fff
 for session_id, session_data in reversed(list(st.session_state.chat_sessions.items())):
     title = session_data.get("title", "Chat")
     if title == "New Chat" and len(session_data["messages"]) <= 1:
-        continue # Hide empty new chats from history
+        if session_id != st.session_state.current_session_id:
+            continue # Hide empty new chats from history
         
     if len(title) > 20:
         title = title[:17] + "..."
         
-    if st.sidebar.button(f"🗨️ {title}", key=session_id, use_container_width=True):
-        st.session_state.current_session_id = session_id
-        st.rerun()
+    col1, col2 = st.sidebar.columns([0.85, 0.15])
+    with col1:
+        if st.button(f"🗨️ {title}", key=f"btn_{session_id}", use_container_width=True):
+            st.session_state.current_session_id = session_id
+            st.rerun()
+    with col2:
+        if st.button("✕", key=f"del_{session_id}", use_container_width=True):
+            del st.session_state.chat_sessions[session_id]
+            sync_history_to_disk()
+            if st.session_state.current_session_id == session_id:
+                new_id = str(uuid.uuid4())
+                st.session_state.current_session_id = new_id
+                st.session_state.chat_sessions[new_id] = {
+                    "title": "New Chat",
+                    "messages": [{"role": "assistant", "content": "Hello! I can help you query the database. Ask me about products, customers, or orders.", "data": None}],
+                    "context_entity": None
+                }
+            st.rerun()
 
 def stream_text(text):
     for word in text.split(" "):
@@ -246,19 +276,5 @@ if prompt := st.chat_input("Ask a question (e.g., 'Show me all orders from John 
             msg_obj = {"role": "assistant", "content": response_text, "data": response_data}
             current_session["messages"].append(msg_obj)
             
-    # Serialize to JSON (skip dataframes natively)
-    save_data = {}
-    for sid, sdata in st.session_state.chat_sessions.items():
-        save_data[sid] = {
-            "title": sdata["title"],
-            "context_entity": sdata["context_entity"],
-            "messages": [
-                {
-                    "role": m["role"],
-                    "content": m["content"],
-                    "data": m["data"].to_dict(orient="records") if isinstance(m["data"], pd.DataFrame) else (m["data"] if isinstance(m["data"], list) else None)
-                }
-                for m in sdata["messages"]
-            ]
-        }
-    save_chat_sessions(save_data)
+    # Serialize to JSON and save
+    sync_history_to_disk()
