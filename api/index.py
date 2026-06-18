@@ -15,10 +15,9 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 sys.path.append(os.path.join(root_dir, "app"))
 
-from app.nlp_sql import parse_query
+from app.nlp_sql import parse_query, rewrite_query_with_llm
 from app.db import run_query
 from app.hybrid_search import semantic_product_search, semantic_customer_search
-from app.main import rewrite_query_with_llm
 
 app = FastAPI()
 

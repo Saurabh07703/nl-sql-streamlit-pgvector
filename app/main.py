@@ -9,7 +9,7 @@ from nlp_sql import parse_query
 from db import run_query
 from hybrid_search import semantic_product_search, semantic_customer_search
 from migration import run_migration
-from openai import OpenAI
+from nlp_sql import parse_query, rewrite_query_with_llm
 
 # 1. Set Page Config (MUST BE FIRST)
 st.set_page_config(page_title="NLP SQL Chat", page_icon="💬")
@@ -105,25 +105,6 @@ def get_conversational_response(text):
     if "who are you" in text or "what are you" in text:
         return "I am an AI assistant powered by PostgreSQL and pgvector. I translate your natural language questions into SQL queries."
     return None
-
-def rewrite_query_with_llm(query, history_messages):
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
-    if not client.api_key:
-        return None # No LLM available
-        
-    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in history_messages[-6:-1] if m['role'] != 'system'])
-    prompt = f"Given the chat history:\n{history_text}\n\nRewrite the following user query to make it fully self-contained without pronouns, keeping the same intent:\nUser: {query}\nRewritten Query:"
-    
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.0
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"LLM rewrite failed: {e}")
-        return None
 
 # Display chat messages from history
 for message in current_session["messages"]:

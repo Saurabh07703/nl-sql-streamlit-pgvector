@@ -68,3 +68,25 @@ def parse_query(q: str):
         return sql, {}, None
 
     return None, {}, None
+
+import os
+from openai import OpenAI
+
+def rewrite_query_with_llm(query, history_messages):
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+    if not client.api_key:
+        return None # No LLM available
+        
+    history_text = "\n".join([f"{m['role']}: {m['content']}" for m in history_messages[-6:-1] if m['role'] != 'system'])
+    prompt = f"Given the chat history:\n{history_text}\n\nRewrite the following user query to make it fully self-contained without pronouns, keeping the same intent:\nUser: {query}\nRewritten Query:"
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"LLM rewrite failed: {e}")
+        return None
