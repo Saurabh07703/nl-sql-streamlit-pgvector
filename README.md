@@ -102,15 +102,13 @@ Make it friendlier & more interactive:
 
 ⭐ Show SQL query preview (read-only)
 
-⭐ Add query history sidebar
+⭐ **[IMPLEMENTED]** Add custom dark-mode query history sidebar
 
 ⭐ Allow saving frequently used queries
 
-⭐ Add tooltips like:
+⭐ **[IMPLEMENTED]** Real-time text streaming for responses
 
-“Semantic match applied”
-
-“Filter by salary > X”
+⭐ **[IMPLEMENTED]** Context-aware multi-turn conversations (Option A: Rule-based Injection, Option B: LLM Fallback Rewrite)
 
 ⭐ Optionally show match score %
 
@@ -166,7 +164,9 @@ Here’s how your system meets expectations 👇
 
 🎯 Usability of Streamlit UI
 
-✔ Clean single-input query box
+✔ Clean single-input query box with conversational awareness
+✔ Custom styled dark-mode sidebar for persistent Chat History
+✔ Real-time word-by-word text streaming for conversational replies
 ✔ Simple readable results table
 ✔ Suitable for demo & evaluation
 ✔ Easy to understand for non-technical users

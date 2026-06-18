@@ -58,9 +58,28 @@ User types message
             Return top 5 nearest matches
 ```
 
----
-
 ## 2. How NLP Message → SQL Query Works
+
+### The Core Rules
+
+We use regular expressions to look for specific keywords and numbers.
+
+**1. Price Filtering:**
+*   It looks for words like `above`, `more than`, `>`.
+*   It captures the number that comes right after it.
+*   *Example:* "products above 50" -> Extracted value: `50` -> SQL: `WHERE price > 50`
+
+**2. Department Filtering:**
+*   It looks for "in", "from", or "department".
+*   It captures the next word.
+*   *Example:* "employees in sales" -> Extracted value: `Sales` -> SQL: `WHERE d.name = 'Sales'`
+
+**3. Context & Pronoun Resolution (LLM Fallback)**
+*   It saves previous entities (like the name "John") to `chat_history.json`.
+*   If a user asks "what about his orders?", it uses OpenAI `gpt-3.5-turbo` to rewrite the query into "what about John's orders?".
+*   *Why this matters*: It allows users to have a natural, multi-turn conversation without repeating context.
+
+---
 
 ### Step-by-Step: `"show all orders"` → SQL
 

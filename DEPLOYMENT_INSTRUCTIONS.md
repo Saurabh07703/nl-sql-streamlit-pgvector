@@ -67,3 +67,9 @@ Since the "Connect to GitHub" button is not visible, we will set up a **GitHub A
     *   Commit and push your changes to GitHub.
     *   The Action will run and sync your code to Hugging Face automatically!
 
+### Hugging Face Deployment Troubleshooting
+If your GitHub Action says "Deployed (completed)" but your Hugging Face Space is not updating:
+1. **Binary Files in History**: Hugging Face strictly blocks `git push` if it detects large binary files (like PDFs) anywhere in the `main` branch history. We fixed this by running `git filter-branch` to obliterate `Response_Streamlit.pdf` from the git history.
+2. **Force Push**: Our `sync_to_hub.yml` GitHub action now uses `git push --force` to ensure Hugging Face stays exactly in sync with GitHub, even if you accidentally modified files on the Hugging Face web UI.
+3. **Verify Vercel vs HF**: Vercel handles static previews (`main - nl-sql-streamlit`), so a "Deployed" status check might just be Vercel. Always verify the `sync-to-hub` action logs specifically.
+

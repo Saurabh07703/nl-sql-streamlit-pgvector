@@ -22,7 +22,7 @@ sequenceDiagram
     
     API->>API: Check for Greetings (Hello/Hi)
     alt is Greeting
-        API-->>Frontend: Return Conversational Reply
+        API-->>Frontend: Return Conversational Reply (Streaming)
     else is Query
         API->>NLP: Parse Query with Regex
         
@@ -30,7 +30,10 @@ sequenceDiagram
             NLP->>DB: Execute SQL (e.g., SELECT * FROM products WHERE price > 50)
             DB-->>NLP: Return Results
             NLP-->>API: Return Structured Data
-        else No Regex Match (Unstructured/Semantic)
+        else No Regex Match (Unstructured/Semantic/Incomplete)
+            API->>NLP: Use History for Context (e.g., "what about bob?")
+            NLP->>LLM: Rewrite Query (OpenAI Fallback)
+            LLM-->>NLP: Return Self-Contained Query
             API->>Vector: specific "product"/"customer" keywords?
             Vector->>Vector: Convert Query to Vector (TF-IDF)
             Vector->>DB: pgvector Similarity Search (Cosine Distance)
@@ -38,20 +41,21 @@ sequenceDiagram
             Vector-->>API: Return Semantic Matches
         end
         
-        API-->>Frontend: Return JSON Response
+        API-->>Frontend: Return JSON/Streamed Response
     end
-    Frontend-->>User: Display Dictionary/Table
+    Frontend-->>User: Display Dictionary/Table with Chat History Saved
 ```
 
 ### Step-by-Step Flow:
 1.  **User Request**: User sends a natural language query.
-2.  **API Entry**: Request hits `api/index.py`.
-3.  **Intent Classification**:
-    *   **Greeting Check**: Simple string matching for "hi", "hello".
+2.  **Context Injection**: The system maintains a `chat_history.json` and loads the previous entities.
+3.  **Intent Classification & Rewrite**:
+    *   **Greeting Check**: Simple string matching for "hi", "hello" with word-by-word streaming responses.
     *   **Regex Parsing**: `app/nlp_sql.py` checks patterns (e.g., `above \d+`) to build precise SQL.
+    *   **LLM Fallback Rewrite**: If the query is incomplete or contains pronouns ("he", "his"), it is rewritten using OpenAI based on recent chat history.
     *   **Fallback (Vector Search)**: If regex fails, `app/hybrid_search.py` converts text to vectors and queries the DB using `pgvector`.
 4.  **Execution**: The appropriate SQL is run against Postgres.
-5.  **Response**: JSON data is returned to the client.
+5.  **Response**: Results are streamed to the frontend and saved to history.
 
 ---
 
@@ -72,8 +76,12 @@ sequenceDiagram
     *   **pgvector**: Postgres extension to store vectors and perform similarity searches.
     *   **Cosine Similarity**: Used to find the "closest" product vector to the query vector.
 
-### C. Hybrid Search Architecture
-*   **What**: Combining **Structured Rules** (SQL) with **Unstructured Similarity** (Vectors).
+### C. Context-Aware LLM Fallback (OpenAI)
+*   **What**: Using `gpt-3.5-turbo` to rewrite queries that are incomplete or contain pronouns based on recent chat history.
+*   **Why**: Makes the chatbot conversational. A user can say "Show me John's orders" and then follow up with "What is his salary?" without breaking the SQL parser.
+
+### D. Hybrid Search Architecture
+*   **What**: Combining **Structured Rules** (SQL) with **Unstructured Similarity** (Vectors) and **LLM Rewrites**.
 *   **Why**: Provides the robustness of traditional databases with the flexibility of modern AI search.
 
 ---
