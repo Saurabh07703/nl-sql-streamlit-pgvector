@@ -25,8 +25,43 @@ def sync_data():
 sync_data()
 
 st.title("💬 AI Database Assistant")
-st.sidebar.markdown("**App Status:** 🟢 Online")
-st.sidebar.markdown("**Version:** v1.5.0 (Latest)")
+
+# Custom Sidebar CSS to match screenshot exactly
+st.markdown("""
+<style>
+    [data-testid="stSidebar"] {
+        background-color: #11131a;
+    }
+    
+    [data-testid="stSidebar"] div.stButton > button {
+        background-color: transparent !important;
+        border: none !important;
+        color: white !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        font-size: 15px !important;
+        padding-left: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    [data-testid="stSidebar"] div.stButton > button:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    [data-testid="stSidebar"] div.stButton:first-of-type > button {
+        justify-content: center !important;
+        font-weight: 600 !important;
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+    }
+    
+    [data-testid="stSidebar"] hr {
+        margin-top: 0 !important;
+        margin-bottom: 25px !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Setup Chat History File
 CHAT_HISTORY_FILE = "app/chat_history.json"
@@ -66,8 +101,7 @@ if "current_session_id" not in st.session_state:
 current_session = st.session_state.chat_sessions[st.session_state.current_session_id]
 
 # Sidebar Chat Sessions
-st.sidebar.markdown("### Chat History")
-if st.sidebar.button("➕ New Chat"):
+if st.sidebar.button("+ New Chat", use_container_width=True):
     new_id = str(uuid.uuid4())
     st.session_state.current_session_id = new_id
     st.session_state.chat_sessions[new_id] = {
@@ -78,8 +112,17 @@ if st.sidebar.button("➕ New Chat"):
     st.rerun()
 
 st.sidebar.markdown("---")
-for session_id, session_data in st.session_state.chat_sessions.items():
-    if st.sidebar.button(session_data.get("title", "Chat"), key=session_id):
+st.sidebar.markdown("<p style='font-size: 0.75rem; font-weight: 700; color: #fff; letter-spacing: 0.5px; margin-bottom: 10px;'>RECENT CHATS</p>", unsafe_allow_html=True)
+
+for session_id, session_data in reversed(list(st.session_state.chat_sessions.items())):
+    title = session_data.get("title", "Chat")
+    if title == "New Chat" and len(session_data["messages"]) <= 1:
+        continue # Hide empty new chats from history
+        
+    if len(title) > 20:
+        title = title[:17] + "..."
+        
+    if st.sidebar.button(f"🗨️ {title}", key=session_id, use_container_width=True):
         st.session_state.current_session_id = session_id
         st.rerun()
 
