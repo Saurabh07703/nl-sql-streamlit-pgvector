@@ -13,6 +13,8 @@
             --bot-msg: #1a1c24;
             --text-color: #fafafa;
             --accent: #ff4b4b;
+            --sidebar-bg: #1e1e24;
+            --sidebar-hover: #333;
         }
 
         body {
@@ -21,8 +23,77 @@
             color: var(--text-color);
             margin: 0;
             display: flex;
-            flex-direction: column;
             height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        .new-chat-btn {
+            padding: 0.8rem;
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid #555;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-align: center;
+            display: block;
+            width: 100%;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--sidebar-hover);
+        }
+
+        .session-btn {
+            padding: 0.8rem;
+            background-color: transparent;
+            color: var(--text-color);
+            border: none;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            text-align: left;
+            width: 100%;
+            transition: background 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-btn:hover {
+            background-color: var(--sidebar-hover);
+        }
+
+        .session-btn.active {
+            background-color: var(--accent);
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
@@ -78,7 +149,7 @@
             font-size: 1rem;
         }
 
-        button {
+        .send-btn {
             padding: 0.8rem 2rem;
             background-color: var(--accent);
             color: white;
@@ -88,11 +159,11 @@
             font-weight: bold;
         }
 
-        button:hover {
+        .send-btn:hover {
             opacity: 0.9;
         }
 
-        button:disabled {
+        .send-btn:disabled {
             background-color: #555;
             cursor: not-allowed;
         }
@@ -105,8 +176,7 @@
             font-size: 0.9rem;
         }
 
-        th,
-        td {
+        th, td {
             text-align: left;
             padding: 0.8rem;
             border-bottom: 1px solid #333;
@@ -115,38 +185,109 @@
         th {
             background-color: #333;
         }
-
-        .typing-indicator {
-            font-style: italic;
-            color: #888;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-        }
     </style>
 </head>
 
 <body>
-
-    <div class="header">
-        <h2>💬 AI Database Assistant</h2>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h3>Chat History</h3>
+        <button class="new-chat-btn" onclick="createNewSession()">➕ New Chat</button>
+        <div id="sessionList"></div>
     </div>
 
-    <div class="chat-container" id="chat">
-        <div class="message bot">
-            Hello! I can help you query the database. Ask me about products, customers, or orders.
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h2>💬 AI Database Assistant</h2>
         </div>
-    </div>
 
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Ask a question (e.g., 'Show me all orders from John Doe')"
-            onkeypress="handleEnter(event)">
-        <button onclick="sendMessage()" id="sendBtn">Send</button>
+        <div class="chat-container" id="chat">
+            <!-- Messages rendered here -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask a question (e.g., 'Show me all orders from John Doe')"
+                onkeypress="handleEnter(event)">
+            <button class="send-btn" onclick="sendMessage()" id="sendBtn">Send</button>
+        </div>
     </div>
 
     <script>
         const chat = document.getElementById('chat');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
+        const sessionList = document.getElementById('sessionList');
+
+        let currentSessionId = null;
+        let sessions = {};
+
+        // 1. Initial Load
+        async function loadSessions() {
+            try {
+                const response = await fetch('http://localhost:8000/api/sessions');
+                sessions = await response.json();
+                
+                if (Object.keys(sessions).length === 0) {
+                    await createNewSession();
+                } else {
+                    currentSessionId = Object.keys(sessions)[Object.keys(sessions).length - 1];
+                    renderSidebar();
+                    renderChat();
+                }
+            } catch (err) {
+                console.error("Failed to load sessions:", err);
+            }
+        }
+
+        // 2. Create New Session
+        async function createNewSession() {
+            try {
+                const response = await fetch('http://localhost:8000/api/sessions/new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: "New Chat" })
+                });
+                const data = await response.json();
+                currentSessionId = data.session_id;
+                sessions[currentSessionId] = data.session;
+                
+                renderSidebar();
+                renderChat();
+            } catch (err) {
+                console.error("Failed to create session:", err);
+            }
+        }
+
+        function selectSession(id) {
+            currentSessionId = id;
+            renderSidebar();
+            renderChat();
+        }
+
+        function renderSidebar() {
+            sessionList.innerHTML = '';
+            for (const [id, data] of Object.entries(sessions)) {
+                const btn = document.createElement('button');
+                btn.className = `session-btn ${id === currentSessionId ? 'active' : ''}`;
+                btn.innerText = data.title || "Chat";
+                btn.onclick = () => selectSession(id);
+                sessionList.prepend(btn); // newest first
+            }
+        }
+
+        function renderChat() {
+            chat.innerHTML = '';
+            const session = sessions[currentSessionId];
+            if (!session) return;
+
+            session.messages.forEach(msg => {
+                addMessage(msg.content, msg.role);
+                if (msg.data) {
+                    addTable(msg.data);
+                }
+            });
+        }
 
         function handleEnter(e) {
             if (e.key === 'Enter') sendMessage();
@@ -154,35 +295,72 @@
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            if (!text) return;
+            if (!text || !currentSessionId) return;
 
-            // 1. Add User Message
+            // Update local state UI immediately
             addMessage(text, 'user');
+            if (sessions[currentSessionId].title === "New Chat") {
+                sessions[currentSessionId].title = text.substring(0, 20) + (text.length > 20 ? "..." : "");
+                renderSidebar();
+            }
+            sessions[currentSessionId].messages.push({ role: "user", content: text, data: null });
+            
             userInput.value = '';
             setLoading(true);
 
+            // Prepare bot message container for streaming
+            const div = document.createElement('div');
+            div.className = 'message bot';
+            chat.appendChild(div);
+            scrollToBottom();
+
+            let streamedContent = "";
+            let streamData = null;
+
             try {
-                // 2. Call API
                 const response = await fetch('http://localhost:8000/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify({ message: text, session_id: currentSessionId })
                 });
 
                 if (!response.ok) throw new Error("API Error");
 
-                const data = await response.json();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = "";
 
-                // 3. Add Bot Response
-                addMessage(data.text, 'bot');
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop(); // keep incomplete chunk
 
-                // 4. Render Table if data exists
-                if (data.data && data.data.length > 0) {
-                    addTable(data.data);
+                    for (const part of parts) {
+                        if (part.startsWith('data: ')) {
+                            const jsonStr = part.replace('data: ', '');
+                            try {
+                                const payload = JSON.parse(jsonStr);
+                                if (payload.text) {
+                                    streamedContent += payload.text;
+                                    div.innerHTML = streamedContent.replace(/\n/g, '<br>');
+                                    scrollToBottom();
+                                }
+                                if (payload.data) {
+                                    streamData = payload.data;
+                                    addTable(streamData);
+                                }
+                            } catch(e) {}
+                        }
+                    }
                 }
+                
+                sessions[currentSessionId].messages.push({ role: "assistant", content: streamedContent, data: streamData });
 
             } catch (err) {
-                addMessage("Sorry, something went wrong. Please try again.", 'bot');
+                div.innerHTML = "Sorry, something went wrong. Please try again.";
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -192,20 +370,16 @@
         function addMessage(text, role) {
             const div = document.createElement('div');
             div.className = `message ${role}`;
-
-            // Convert newlines to breaks for formatting
             div.innerHTML = text.replace(/\n/g, '<br>');
-
             chat.appendChild(div);
             scrollToBottom();
         }
 
         function addTable(data) {
+            if (!data || data.length === 0) return;
             const div = document.createElement('div');
             div.className = 'message bot';
-            div.style.maxWidth = '95%'; // Allow tables to be wider
-
-            if (data.length === 0) return;
+            div.style.maxWidth = '95%';
 
             const headers = Object.keys(data[0]);
 
@@ -233,6 +407,9 @@
         function scrollToBottom() {
             chat.scrollTop = chat.scrollHeight;
         }
+
+        // Initialize
+        loadSessions();
     </script>
 </body>
 
